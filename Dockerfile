@@ -63,5 +63,5 @@ COPY log4j.properties /opt/spark/conf/log4j.properties
 
 ENTRYPOINT . ./bin/activate && spark-submit \
            --packages com.johnsnowlabs.nlp:spark-nlp_2.12:3.4.2 \
-           --driver-memory=3g \
+           --driver-memory=10g \
            main.py
