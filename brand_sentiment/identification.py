@@ -1,31 +1,31 @@
-import sparknlp
+from typing import List, Tuple
+from pandas import DataFrame
+
+from pyspark import Row
 from pyspark.ml import Pipeline
+
+from pyspark.sql import SparkSession, functions as F
 from pyspark.sql.types import StringType, ArrayType
-import pyspark.sql.functions as F
-# from sparknlp.annotator import *
-# from sparknlp.base import *
+
 from sparknlp.base import DocumentAssembler
-from sparknlp.annotator import Tokenizer, BertEmbeddings, NerDLModel, NerConverter
-
-
-# The spark udf function that has to be defined outside the class
-def get_brand(row_list):
-    if not row_list:  # If the list of detected entities is empty
-        return []  # Return an empty list
-
-    else:
-        # Create a list of lists with entity and type
-        data = [[row.result, row.metadata['entity']] for row in row_list]
-        return data
+from sparknlp.annotator import Tokenizer, BertEmbeddings, \
+    NerDLModel, NerConverter
 
 
 class BrandIdentification:
-    def __init__(self, spark, MODEL_NAME):
-        self.spark = spark
-        self.MODEL_NAME = MODEL_NAME
 
-        # Define Spark NLP pipeline
-        documentAssembler = DocumentAssembler() \
+    FIELDS = ("text", "source_domain", "date_publish",
+              "language", "Predicted_Entity")
+
+    def __init__(self, spark: SparkSession, model_name: str):
+        self.spark = spark
+        self.model_name = model_name
+
+        self.model = None
+        self.build_pipeline()
+
+    def build_pipeline(self):
+        document_assembler = DocumentAssembler() \
             .setInputCol('text') \
             .setOutputCol('document')
 
@@ -33,12 +33,13 @@ class BrandIdentification:
             .setInputCols(['document']) \
             .setOutputCol('token')
 
-        # Bert model uses Bert embeddings
-        embeddings = BertEmbeddings.pretrained(name='bert_base_cased', lang='en') \
+        embeddings = BertEmbeddings \
+            .pretrained(name='bert_base_cased', lang='en') \
             .setInputCols(['document', 'token']) \
             .setOutputCol('embeddings')
 
-        ner_model = NerDLModel.pretrained(MODEL_NAME, 'en') \
+        ner_model = NerDLModel \
+            .pretrained(self.model_name, 'en') \
             .setInputCols(['document', 'token', 'embeddings']) \
             .setOutputCol('ner')
 
@@ -47,33 +48,25 @@ class BrandIdentification:
             .setOutputCol('ner_chunk')
 
         nlp_pipeline = Pipeline(stages=[
-            documentAssembler,
+            document_assembler,
             tokenizer,
             embeddings,
             ner_model,
             ner_converter
         ])
 
-        # Create the pipeline model
+        # An empty df with column name "text"
+        empty_df = self.spark.createDataFrame([['']], ["text"])
+        self.model = nlp_pipeline.fit(empty_df)
 
-        empty_df = self.spark.createDataFrame([['']]).toDF('text')  # An empty df with column name "text"
-        self.pipeline_model = nlp_pipeline.fit(empty_df)
+    @F.udf(returnType=ArrayType(ArrayType(StringType())))
+    @staticmethod
+    def extract_brands(rows: List[Row]) -> List[Tuple[str, str]]:
+        return [(row.result, row.metadata['entity']) for row in rows]
 
-    def predict_brand(self, df):  # df is a spark df with a column named "text" - headlines or sentences
-        # Run the pipeline for the spark df
-        df_spark = self.pipeline_model.transform(df)
+    def predict_brand(self, df: DataFrame) -> DataFrame:
+        brand_df = self.model.transform(df) \
+            .withColumn("Predicted_Entity", self.extract_brands('ner_chunk')) \
+            .select(*self.FIELDS)
 
-        # Improve speed of identification using Spark User-defined function
-        pred_brand = F.udf(lambda z: get_brand(z), ArrayType(ArrayType(StringType())))  # Output a list of lists containing [entity, type] pairs
-
-        df_spark_combined = df_spark.withColumn("Predicted_Entity", pred_brand('ner_chunk'))
-        df_spark_combined = df_spark_combined.select("text", "source_domain", "date_publish", "language", "Predicted_Entity")
-        # IF DATE_PUBLISH == NONE: DATE_PUBLISH = EXTRACTION_DATE
-        # df_spark_combined.show(100)
-
-        # Remove all rows with no brands detected
-        # Only keep lists with at least one identified entity
-        df_spark_combined = df_spark_combined.filter(F.size(df_spark_combined.Predicted_Entity) > 0)
-        df_spark_combined.show()
-
-        return df_spark_combined
+        return brand_df.filter(F.size(brand_df.Predicted_Entity) > 0)
