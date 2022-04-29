@@ -14,10 +14,10 @@ extraction_bucket = os.environ.get("EXTRACTION_BUCKET_NAME")
 sentiment_bucket = os.environ.get("SENTIMENT_BUCKET_NAME")
 extraction_date = os.environ.get("EXTRACTION_DATE")
 
-dataframe_partitions = int(os.environ.get("DATAFRAME_PARTITIONS"))
+sentiment_model = os.environ.get("SENTIMENT_MODEL")
+ner_model = os.environ.get("NER_MODEL")
 
-ner_model_name = "ner_conll_bert_base_cased"
-sentiment_model_name = "classifierdl_bertwiki_finance_sentiment_pipeline"
+dataframe_partitions = int(os.environ.get("DATAFRAME_PARTITIONS"))
 
 spark = SparkSession.builder \
     .appName("ArticleParquetToDF") \
@@ -38,14 +38,14 @@ partitions = articles_df.rdd.getNumPartitions()
 logging.warning(f"AWS Download complete with shape {shape} and {partitions} partitions.")
 articles_df.show()
 
-brand_identifier = BrandIdentification(spark, ner_model_name)
+brand_identifier = BrandIdentification(spark, ner_model)
 
 brand_df = brand_identifier.predict(articles_df)
 
 logging.info("NER Analysis complete.")
 brand_df.show()
 
-sentimentiser = SentimentIdentification(spark, sentiment_model_name)
+sentimentiser = SentimentIdentification(spark, sentiment_model)
 brand_sentiment_df = sentimentiser.predict(brand_df)
 
 logging.info(f"Sentiment Analysis complete.")

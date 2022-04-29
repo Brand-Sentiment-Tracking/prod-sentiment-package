@@ -61,6 +61,9 @@ COPY main.py .
 # Copy spark log4j config so only warnings are displayed
 COPY log4j.properties /opt/spark/conf/log4j.properties
 
+ENV SENTIMENT_MODEL=classifierdl_bertwiki_finance_sentiment_pipeline
+ENV NER_MODEL=xlnet_base
+
 ENV DATAFRAME_PARTITIONS=32
 
 ENTRYPOINT . ./bin/activate && spark-submit \

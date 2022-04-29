@@ -10,8 +10,8 @@ from pyspark.sql import SparkSession, functions as F
 from pyspark.sql.types import StringType, ArrayType
 
 from sparknlp.base import DocumentAssembler
-from sparknlp.annotator import Tokenizer, BertEmbeddings, \
-    NerDLModel, NerConverter
+from sparknlp.annotator import XlnetForTokenClassification, \
+    Tokenizer, BertEmbeddings, NerDLModel, NerConverter
 
 
 class BrandIdentification:
@@ -37,27 +37,49 @@ class BrandIdentification:
             .setInputCols(['document']) \
             .setOutputCol('token')
 
-        embeddings = BertEmbeddings \
-            .pretrained(name='bert_base_cased', lang='en') \
-            .setInputCols(['document', 'token']) \
-            .setOutputCol('embeddings')
-
-        ner_model = NerDLModel \
-            .pretrained(self.model_name, 'en') \
-            .setInputCols(['document', 'token', 'embeddings']) \
-            .setOutputCol('ner')
-
         ner_converter = NerConverter() \
             .setInputCols(['document', 'token', 'ner']) \
             .setOutputCol('ner_chunk')
 
-        nlp_pipeline = Pipeline(stages=[
-            document_assembler,
-            tokenizer,
-            embeddings,
-            ner_model,
-            ner_converter
-        ])
+
+        if self.model_name == "xlnet_base":
+            tokenClassifier = XlnetForTokenClassification \
+                .pretrained('xlnet_base_token_classifier_conll03', 'en') \
+                .setInputCols(['token', 'document']) \
+                .setOutputCol('ner') \
+                .setCaseSensitive(True) \
+                .setMaxSentenceLength(512)
+
+            nlp_pipeline = Pipeline(stages=[
+                document_assembler, 
+                tokenizer,
+                tokenClassifier,
+                ner_converter
+            ])
+
+        elif self.model_name == "ner_conll_bert_base_cased":
+            # Bert model uses Bert embeddings
+            embeddings = BertEmbeddings \
+                .pretrained(name='bert_base_cased', lang='en') \
+                .setInputCols(['document', 'token']) \
+                .setOutputCol('embeddings')
+
+            ner_model = NerDLModel \
+                .pretrained(self.model_name, 'en') \
+                .setInputCols(['document', 'token', 'embeddings']) \
+                .setOutputCol('ner')
+
+            nlp_pipeline = Pipeline(stages=[
+                document_assembler, 
+                tokenizer,
+                embeddings,
+                ner_model,
+                ner_converter
+            ])
+
+        else:
+            raise ValueError("Model must be either 'xlnet_base' or "
+                             "'ner_conll_bert_base_cased'.")
 
         # An empty df with column name "text"
         empty_df = self.spark.createDataFrame([['']], ["text"])
