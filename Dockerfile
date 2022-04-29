@@ -58,7 +58,11 @@ COPY brand_sentiment/ brand_sentiment/
 COPY articles/ articles/
 COPY main.py .
 
+# Copy spark log4j config so only warnings are displayed
+COPY log4j.properties /opt/spark/conf/log4j.properties
+
+ENV DATAFRAME_PARTITIONS=32
+
 ENTRYPOINT . ./bin/activate && spark-submit \
            --packages com.johnsnowlabs.nlp:spark-nlp_2.12:3.4.2 \
-           --driver-memory=10g \
-           main.py
+           --driver-memory=10g main.py

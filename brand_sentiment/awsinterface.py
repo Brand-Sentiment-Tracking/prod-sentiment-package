@@ -17,22 +17,24 @@ class AWSInterface:
         else:
             self.extraction_date = extraction_date
 
-    def __preprocess_dataframe(self, df: DataFrame):
+    def __preprocess_dataframe(self, df: DataFrame,
+                               partitions: int) -> DataFrame:
+
         dates = F.when(df["date_publish"].isNull(), self.extraction_date) \
             .otherwise(df["date_publish"])
 
         return df.withColumnRenamed("title", "text") \
             .withColumn("date_publish", dates) \
             .withColumn("language", F.lit("en")) \
-            .repartition("date_publish")
+            .repartition(partitions)
 
-    def download(self):
+    def download(self, partitions: int = 32) -> DataFrame:
         df = self.spark.read \
             .parquet(f"s3a://{self.extraction_bucket}/"
                      f"date_crawled={self.extraction_date}/"
                      f"language=en/")
 
-        return self.__preprocess_dataframe(df)
+        return self.__preprocess_dataframe(df, partitions)
 
     def upload(self, df: DataFrame):
         df.write.mode('append').parquet(f"s3a://{self.sentiment_bucket}/")

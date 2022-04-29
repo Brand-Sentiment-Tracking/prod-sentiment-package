@@ -1,3 +1,5 @@
+import logging
+
 from typing import List, Tuple
 from pandas import DataFrame
 
@@ -14,8 +16,8 @@ from sparknlp.annotator import Tokenizer, BertEmbeddings, \
 
 class BrandIdentification:
 
-    FIELDS = ("text", "source_domain", "date_publish",
-              "language", "Predicted_Entity")
+    NER_FIELDS = ("text", "source_domain", "date_publish",
+                  "language", "Predicted_Entity")
 
     def __init__(self, spark: SparkSession, model_name: str):
         self.spark = spark
@@ -25,6 +27,8 @@ class BrandIdentification:
         self.build_pipeline()
 
     def build_pipeline(self):
+        logging.info("Building NER Pipeline...")
+        
         document_assembler = DocumentAssembler() \
             .setInputCol('text') \
             .setOutputCol('document')
@@ -58,15 +62,20 @@ class BrandIdentification:
         # An empty df with column name "text"
         empty_df = self.spark.createDataFrame([['']], ["text"])
         self.model = nlp_pipeline.fit(empty_df)
+        
+        logging.info("NER Pipeline built successfully.")
 
-    @F.udf(returnType=ArrayType(ArrayType(StringType())))
     @staticmethod
+    @F.udf(returnType=ArrayType(ArrayType(StringType())))
     def extract_brands(rows: List[Row]) -> List[Tuple[str, str]]:
         return [(row.result, row.metadata['entity']) for row in rows]
 
-    def predict_brand(self, df: DataFrame) -> DataFrame:
+    def predict(self, df: DataFrame) -> DataFrame:
+        logging.info("Running NER model.")
+        
         brand_df = self.model.transform(df) \
             .withColumn("Predicted_Entity", self.extract_brands('ner_chunk')) \
-            .select(*self.FIELDS)
-
+            .select(*self.NER_FIELDS)
+        
+        logging.info("Removing articles with no entities.")
         return brand_df.filter(F.size(brand_df.Predicted_Entity) > 0)

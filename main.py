@@ -8,11 +8,13 @@ from brand_sentiment.awsinterface import AWSInterface
 from brand_sentiment.identification import BrandIdentification
 from brand_sentiment.sentiment import SentimentIdentification
 
-logging.basicConfig(level=logging.WARN)
+logging.basicConfig(level=logging.INFO)
 
 extraction_bucket = os.environ.get("EXTRACTION_BUCKET_NAME")
 sentiment_bucket = os.environ.get("SENTIMENT_BUCKET_NAME")
 extraction_date = os.environ.get("EXTRACTION_DATE")
+
+dataframe_partitions = int(os.environ.get("DATAFRAME_PARTITIONS"))
 
 ner_model_name = "ner_conll_bert_base_cased"
 sentiment_model_name = "classifierdl_bertwiki_finance_sentiment_pipeline"
@@ -29,19 +31,24 @@ logging.warning(f"Running Spark NLP v{sparknlp.version()}")
 aws_interface = AWSInterface(spark, extraction_bucket, sentiment_bucket,
                              extraction_date)
 
-brand_identifier = BrandIdentification(spark, ner_model_name)
-sentimentiser = SentimentIdentification(spark, sentiment_model_name)
+articles_df = aws_interface.download(dataframe_partitions)
+shape = (articles_df.count(), len(articles_df.columns))
+partitions = articles_df.rdd.getNumPartitions()
 
-articles_df = aws_interface.download()
-logging.info(articles_df.shape())
+logging.warning(f"AWS Download complete with shape {shape} and {partitions} partitions.")
 articles_df.show()
 
-brand_spark_df = brand_identifier.predict(articles_df)
-logging.info(brand_spark_df.shape())
-brand_spark_df.show()
+brand_identifier = BrandIdentification(spark, ner_model_name)
 
-complete_spark_df = sentimentiser.predict_dataframe(brand_spark_df)
-logging.info(complete_spark_df.shape())
-complete_spark_df.show()
+brand_df = brand_identifier.predict(articles_df)
 
-aws_interface.upload(complete_spark_df)
+logging.info("NER Analysis complete.")
+brand_df.show()
+
+sentimentiser = SentimentIdentification(spark, sentiment_model_name)
+brand_sentiment_df = sentimentiser.predict(brand_df)
+
+logging.info(f"Sentiment Analysis complete.")
+brand_sentiment_df.show()
+
+aws_interface.upload(brand_sentiment_df)
