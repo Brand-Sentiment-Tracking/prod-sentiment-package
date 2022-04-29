@@ -68,7 +68,7 @@ class BrandIdentification:
     @staticmethod
     @F.udf(returnType=ArrayType(ArrayType(StringType())))
     def extract_brands(rows: List[Row]) -> List[Tuple[str, str]]:
-        return [(row.result, row.metadata['entity']) for row in rows]
+        return [[row.result, row.metadata['entity']] for row in rows]
 
     def predict(self, df: DataFrame) -> DataFrame:
         logging.info("Running NER model.")

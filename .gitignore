@@ -2,6 +2,9 @@
 venv/*
 .python-version
 
+# Ignore caching
+__pycache__
+
 # Ignore log files
 *.log
 aws-java-sdk-bundle-1.11.375.jar

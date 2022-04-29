@@ -64,6 +64,7 @@ class SentimentIdentification:
 
         # Join the predictions and the scores in one dataframe
         mask = sentiment_df.column_index == scores.column_index
+        
         combined_df = sentiment_df \
             .join(scores, mask, "inner") \
             .drop(scores.column_index) \
