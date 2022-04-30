@@ -52,3 +52,5 @@ logging.info(f"Sentiment Analysis complete.")
 brand_sentiment_df.show()
 
 aws_interface.upload(brand_sentiment_df)
+
+logging.info(f"AWS Upload complete.")

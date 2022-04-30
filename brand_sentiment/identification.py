@@ -100,4 +100,5 @@ class BrandIdentification:
             .select(*self.NER_FIELDS)
         
         logging.info("Removing articles with no entities.")
+        
         return brand_df.filter(F.size(brand_df.Predicted_Entity) > 0)

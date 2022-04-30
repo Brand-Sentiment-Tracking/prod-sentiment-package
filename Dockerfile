@@ -63,4 +63,6 @@ COPY log4j.properties /opt/spark/conf/log4j.properties
 
 ENTRYPOINT . ./bin/activate && spark-submit \
            --packages com.johnsnowlabs.nlp:spark-nlp_2.12:3.4.2 \
-           --driver-memory=16g main.py
+           --conf spark.sql.parquet.enableVectorizedReader=false \
+           --driver-memory=16g \
+           main.py
