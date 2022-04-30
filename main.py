@@ -4,9 +4,8 @@ import os
 
 from pyspark.sql import SparkSession
 
-from brand_sentiment.awsinterface import AWSInterface
-from brand_sentiment.identification import BrandIdentification
-from brand_sentiment.sentiment import SentimentIdentification
+from brand_sentiment import AWSInterface, BrandIdentification, \
+    SentimentIdentification
 
 logging.basicConfig(level=logging.INFO)
 
@@ -17,40 +16,35 @@ extraction_date = os.environ.get("EXTRACTION_DATE")
 sentiment_model = os.environ.get("SENTIMENT_MODEL")
 ner_model = os.environ.get("NER_MODEL")
 
-dataframe_partitions = int(os.environ.get("DATAFRAME_PARTITIONS"))
+partitions = int(os.environ.get("DATAFRAME_PARTITIONS"))
+
+limit = os.environ.get("DATAFRAME_LIMIT")
+limit = int(limit) if limit is not None else None
 
 spark = SparkSession.builder \
-    .appName("ArticleParquetToDF") \
+    .appName("ArticleSentimentiser") \
     .config("spark.sql.broadcastTimeout", "36000") \
     .config("fs.s3.maxConnections", 100) \
     .getOrCreate()
 
-logging.warning(f"Running Apache Spark v{spark.version}")
-logging.warning(f"Running Spark NLP v{sparknlp.version()}")
+logging.info(f"Running Apache Spark v{spark.version}"
+             f" and Spark NLP v{sparknlp.version()}")
 
 aws_interface = AWSInterface(spark, extraction_bucket, sentiment_bucket,
-                             extraction_date)
+                             partitions, extraction_date)
 
-articles_df = aws_interface.download(dataframe_partitions)
-shape = (articles_df.count(), len(articles_df.columns))
-partitions = articles_df.rdd.getNumPartitions()
+brand_identifier = BrandIdentification(spark, ner_model, partitions)
+sentimentiser = SentimentIdentification(spark, sentiment_model, partitions)
 
-logging.warning(f"AWS Download complete with shape {shape} and {partitions} partitions.")
-articles_df.show()
+df = aws_interface.download(limit)
+logging.info(f"Successfully downloaded datafram with {df.count()}"
+             f" rows and {df.rdd.getNumPartitions()} partitions.")
 
-brand_identifier = BrandIdentification(spark, ner_model)
-
-brand_df = brand_identifier.predict(articles_df)
-
+brand_df = brand_identifier.predict_brand(df, True)
 logging.info("NER Analysis complete.")
-brand_df.show()
 
-sentimentiser = SentimentIdentification(spark, sentiment_model)
-brand_sentiment_df = sentimentiser.predict(brand_df)
-
-logging.info(f"Sentiment Analysis complete.")
-brand_sentiment_df.show()
+brand_sentiment_df = sentimentiser.predict_sentiment(brand_df)
+logging.info("Sentiment Analysis complete.")
 
 aws_interface.upload(brand_sentiment_df)
-
-logging.info(f"AWS Upload complete.")
+logging.info("AWS Upload complete.")
