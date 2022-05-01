@@ -1,13 +1,13 @@
 import logging
 
 from typing import List, Tuple
-from pandas import DataFrame
 
 from pyspark import Row
 from pyspark.ml import Pipeline
 
-from pyspark.sql import SparkSession, functions as F
+from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import StringType, ArrayType
+from pyspark.sql import functions as F
 
 from sparknlp.base import DocumentAssembler
 from sparknlp.annotator import XlnetForTokenClassification, \

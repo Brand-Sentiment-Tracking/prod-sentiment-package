@@ -12,7 +12,7 @@ class AWSInterface:
     def __init__(self, spark: SparkSession, extraction_bucket: str,
                  sentiment_bucket: str, partitions: int = 32,
                  extraction_date: Optional[Union[str, datetime]] = None,
-                 log_level: int = logging.INFO):
+                 language: str = "en", log_level: int = logging.INFO):
 
         self.logger = logging.getLogger("AWSInterface")
         self.logger.setLevel(log_level)
@@ -29,6 +29,8 @@ class AWSInterface:
             self.extraction_date = yesterday
         else:
             self.extraction_date = extraction_date
+
+        self.language = language
 
     @property
     def extraction_bucket(self) -> str:
@@ -88,10 +90,21 @@ class AWSInterface:
         self.__extraction_date = parsed_date.date().isoformat()
 
     @property
+    def language(self) -> str:
+        return self.__language
+
+    @language.setter
+    def language(self, lang: str):
+        if type(lang) != str:
+            raise ValueError("Lanaguage is not a string.")
+        
+        self.__language = lang
+
+    @property
     def extraction_url(self) -> str:
         return f"s3a://{self.extraction_bucket}/" \
                f"date_crawled={self.extraction_date}/" \
-               f"language=en/"
+               f"language={self.language}/"
 
     @property
     def sentiment_url(self) -> str:
