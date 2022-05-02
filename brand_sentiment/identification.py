@@ -3,7 +3,8 @@ import logging
 from typing import List, Tuple
 
 from pyspark import Row
-from pyspark.ml import Pipeline
+
+from pyspark.ml import Pipeline, PipelineModel
 
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.types import StringType, ArrayType
@@ -12,8 +13,6 @@ from pyspark.sql import functions as F
 from sparknlp.base import DocumentAssembler
 from sparknlp.annotator import XlnetForTokenClassification, \
     Tokenizer, BertEmbeddings, NerDLModel, NerConverter
-from transformers import PreTrainedModel
-
 
 class BrandIdentification:
 
@@ -32,7 +31,7 @@ class BrandIdentification:
         self.partitions = partitions
 
     @property
-    def model(self) -> PreTrainedModel:
+    def model(self) -> PipelineModel:
         return self.__model
 
     @property

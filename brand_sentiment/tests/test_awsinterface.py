@@ -125,7 +125,9 @@ class TestAWSInterface(unittest.TestCase):
 
     def test_download_parquet_partition_to_spark(self):
         df = self.aws.download()
+
         self.assertEqual(df.count(), 9789)
+        self.assertEqual(len(df.columns), 6)
 
     def test_upload_spark_dataframe_to_parquet(self):
         df = self.spark.read.parquet(f"{self.resources}/articles.parquet")

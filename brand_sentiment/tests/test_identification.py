@@ -14,9 +14,13 @@ class TestBrandIdentification(unittest.TestCase):
             .getOrCreate()
 
         self.resources = "./brand_sentiment/tests/resources"
-
+    
         self.model_name = "xlnet_base"
         self.partitions = 32
+
+        self.brand_columns = set(["title", "main_text", "url",
+                                  "source_domain", "date_publish",
+                                  "language"])
 
         super().__init__(*args, **kwargs)
 
@@ -61,7 +65,6 @@ class TestBrandIdentification(unittest.TestCase):
         self.assertEqual(e1, "Partitions is not an integer.")
         self.assertEqual(e2, "Partitions is not greater than 0.")
 
-
     def test_build_xlnet_pipeline(self):
         self.brand.model_name = "xlnet_base"
         # Need to find a better way to check this is the correct pipeline
@@ -78,8 +81,8 @@ class TestBrandIdentification(unittest.TestCase):
         brand_df = self.brand.predict_brand(df)
 
         self.assertIsInstance(brand_df, DataFrame)
-        self.assertEqual(len(brand_df.columns), 6)
         self.assertEqual(brand_df.count(), df.count())
+        self.assertSetEqual(set(brand_df.columns), self.brand_columns)
 
     def test_predict_brand_conll_bert(self):
         df = self.spark.read.parquet(f"{self.resources}/articles.parquet")
@@ -87,16 +90,16 @@ class TestBrandIdentification(unittest.TestCase):
         brand_df = self.brand.predict_brand(df)
 
         self.assertIsInstance(brand_df, DataFrame)
-        self.assertEqual(len(brand_df.columns), 6)
         self.assertEqual(brand_df.count(), df.count())
+        self.assertSetEqual(set(brand_df.columns), self.brand_columns)
 
     def test_predict_brand_with_filtering(self):
         df = self.spark.read.parquet(f"{self.resources}/articles.parquet")
         brand_df = self.brand.predict_brand(df, True)
 
         self.assertIsInstance(brand_df, DataFrame)
-        self.assertEqual(len(brand_df.columns), 6)
         self.assertLess(brand_df.count(), df.count())
+        self.assertSetEqual(set(brand_df.columns), self.brand_columns)
 
 
 if __name__ == "__main__":

@@ -39,7 +39,7 @@ class SentimentIdentification:
     @model_name.setter
     def model_name(self, name: str):
         if type(name) != str:
-            raise ValueError("Model name is not a string.")
+            raise TypeError("Model name is not a string.")
         if name != "classifierdl_bertwiki_finance_sentiment_pipeline":
             self.logger.warning("Pipeline hasn't been designed for model "
                                 f"'{name}'. Using this model may cause the "
