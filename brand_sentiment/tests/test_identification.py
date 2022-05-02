@@ -1,6 +1,6 @@
 import unittest
 
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, DataFrame
 
 from .. import BrandIdentification
 
@@ -12,6 +12,8 @@ class TestBrandIdentification(unittest.TestCase):
             .config("spark.sql.broadcastTimeout", "36000") \
             .config("fs.s3.maxConnections", 100) \
             .getOrCreate()
+
+        self.resources = "./brand_sentiment/tests/resources"
 
         self.model_name = "xlnet_base"
         self.partitions = 32
@@ -42,9 +44,6 @@ class TestBrandIdentification(unittest.TestCase):
         
         self.assertEqual(e, expected_message)
 
-    def test_unknown_model_name(self):
-        pass
-
     def test_valid_partition_size(self):
         self.brand.partitions = 50
         self.assertEqual(self.brand.partitions, 50)
@@ -64,16 +63,40 @@ class TestBrandIdentification(unittest.TestCase):
 
 
     def test_build_xlnet_pipeline(self):
-        pass
+        self.brand.model_name = "xlnet_base"
+        # Need to find a better way to check this is the correct pipeline
+        self.assertEqual(len(self.brand.pipeline.stages), 4)
 
     def test_build_conll_pipeline(self):
-        pass
+        self.brand.model_name = "ner_conll_bert_base_cased"
+        # Need to find a better way to check this is the correct pipeline
+        self.assertEqual(len(self.brand.pipeline.stages), 5)
 
     def test_predict_brand_xlnet_base(self):
-        pass
+        df = self.spark.read.parquet(f"{self.resources}/articles.parquet")
+        self.brand.model_name = "xlnet_base"
+        brand_df = self.brand.predict_brand(df)
+
+        self.assertIsInstance(brand_df, DataFrame)
+        self.assertEqual(len(brand_df.columns), 6)
+        self.assertEqual(brand_df.count(), df.count())
 
     def test_predict_brand_conll_bert(self):
-        pass
+        df = self.spark.read.parquet(f"{self.resources}/articles.parquet")
+        self.brand.model_name = "ner_conll_bert_base_cased"
+        brand_df = self.brand.predict_brand(df)
+
+        self.assertIsInstance(brand_df, DataFrame)
+        self.assertEqual(len(brand_df.columns), 6)
+        self.assertEqual(brand_df.count(), df.count())
+
+    def test_predict_brand_with_filtering(self):
+        df = self.spark.read.parquet(f"{self.resources}/articles.parquet")
+        brand_df = self.brand.predict_brand(df, True)
+
+        self.assertIsInstance(brand_df, DataFrame)
+        self.assertEqual(len(brand_df.columns), 6)
+        self.assertLess(brand_df.count(), df.count())
 
 
 if __name__ == "__main__":
