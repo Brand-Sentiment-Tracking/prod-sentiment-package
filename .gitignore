@@ -4,6 +4,7 @@ venv/*
 
 # Ignore caching
 __pycache__
+.pytest_cache
 .DS_Store
 
 # Ignore log files

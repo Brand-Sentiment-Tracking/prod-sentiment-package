@@ -9,6 +9,27 @@ from pyspark.sql import functions as F
 
 
 class AWSInterface:
+    """Download, preprocess and upload article dataframes via AWS S3.
+
+    Note:
+        This class assumes the dataframes are from parquet files partitioned
+        first by date crawled, followed by language.
+
+    Args:
+        spark (SparkSession): The spark session to run the app through.
+        extraction_bucket (str): The name of the bucket to download articles
+            from.
+        sentiment_bucket (str): The name of the bucket to upload results to.
+        partitions (int): The number of partitions to store the dataframe in
+            during execution. The best value is dependent on how the spark
+            session has been created and the hardware of your machine.
+        extraction_date (datetime or str): The date to pull articles from for
+            analysis. If None, the date will be taken to be yesterday's.
+        language (str): The short-code of the language to pull articles from
+            for analysis. Languages other than english are not currently
+            supported.
+        log_level (_Level): The severity level of logs to be reported.
+    """
     def __init__(self, spark: SparkSession, extraction_bucket: str,
                  sentiment_bucket: str, partitions: int = 32,
                  extraction_date: Optional[Union[str, datetime]] = None,
@@ -34,6 +55,7 @@ class AWSInterface:
 
     @property
     def extraction_bucket(self) -> str:
+        """`str`: The name of the bucket to download articles from."""
         return self.__extraction_bucket
 
     @extraction_bucket.setter
@@ -45,6 +67,7 @@ class AWSInterface:
 
     @property
     def sentiment_bucket(self) -> str:
+        """`str`: The name of the bucket to upload results to."""
         return self.__sentiment_bucket
 
     @sentiment_bucket.setter
@@ -56,6 +79,13 @@ class AWSInterface:
 
     @property
     def partitions(self) -> int:
+        """`int`: The number of partitions to store a dataframe in during
+        analysis.
+            
+        The best value is dependent on how the spark session has been created
+        and the hardware of your machine. By default, this is 32. Setting
+        this value to less than 1 will throw a ValueError. 
+        """
         return self.__partitions
 
     @partitions.setter
@@ -69,6 +99,12 @@ class AWSInterface:
 
     @property
     def extraction_date(self) -> str:
+        """`str`: The date to pull articles from for analysis.
+        
+        The setter will automatically try to convert a string or datetime
+        object to YYYY-MM-DD format. If the date is in the future, a
+        ValueError will be raised.
+        """
         return self.__extraction_date
 
     @extraction_date.setter
@@ -87,10 +123,16 @@ class AWSInterface:
         if parsed_date > datetime.now():
             raise ValueError("Extraction date is in the future.")
 
-        self.__extraction_date = parsed_date.date().isoformat()
+        self.__extraction_date = parsed_date.strftime("%Y-%m-%d")
 
     @property
     def language(self) -> str:
+        """`str`: The short-code of the language to pull articles from for
+        analysis.
+        
+        Note:
+            Languages other than english are not currently supported.
+        """
         return self.__language
 
     @language.setter
@@ -102,15 +144,31 @@ class AWSInterface:
 
     @property
     def extraction_url(self) -> str:
+        """`str`: The full URL to the parquet files to download from S3."""
         return f"s3a://{self.extraction_bucket}/" \
                f"date_crawled={self.extraction_date}/" \
                f"language={self.language}/"
 
     @property
     def sentiment_url(self) -> str:
+        """`str`: The full URL to the folder to upload results to in S3."""
         return f"s3a://{self.sentiment_bucket}/"
 
     def __preprocess_dataframe(self, df: DataFrame) -> DataFrame:
+        """Edit the article dataframe in preparation for sentiment analysis.
+        
+        This includes:
+            - Filling in all null publish dates with the date crawled.
+            - Adding the language column back into the dataframe.
+            - Renaming the title column to text.
+            - Repartitioning the dataframe.
+
+        Args:
+            df (DataFrame): The spark df to preprocess.
+        
+        Returns:
+            DataFrame: The processed dataframe ready for sentiment analysis.
+        """
         dates = F.when(df["date_publish"].isNull(), self.extraction_date) \
             .otherwise(df["date_publish"])
 
@@ -120,6 +178,15 @@ class AWSInterface:
             .repartition(self.partitions)
 
     def download(self, limit: Optional[int] = None) -> DataFrame:
+        """Download the parquet files from S3 and load them into a spark df.
+
+        Args:
+            limit (int): The maximum number of articles to download. If None,
+                all articles available will be downloaded.
+
+        Returns:
+            DataFrame: The articles in a spark df, preprocessed.
+        """
         self.logger.info(f"Downloading from '{self.extraction_url}'.")
         df = self.spark.read.parquet(self.extraction_url)
 
@@ -133,6 +200,11 @@ class AWSInterface:
         return self.__preprocess_dataframe(df)
 
     def upload(self, df: DataFrame):
+        """Upload a spark dataframe to AWS S3.
+
+        Args:
+            df (DataFrame): The spark dataframe to upload.
+        """
         self.logger.info(f"Uploading results to '{self.sentiment_url}'.")
         df.write.mode('append').parquet(self.sentiment_url)
 
