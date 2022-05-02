@@ -14,6 +14,7 @@ from sparknlp.base import DocumentAssembler
 from sparknlp.annotator import XlnetForTokenClassification, \
     Tokenizer, BertEmbeddings, NerDLModel, NerConverter
 
+
 class BrandIdentification:
 
     NER_FIELDS = ("text", "source_domain", "date_publish",
@@ -79,7 +80,7 @@ class BrandIdentification:
         ner_converter = NerConverter() \
             .setInputCols(['document', 'token', 'ner']) \
             .setOutputCol('ner_chunk')
-        
+
         return [ner_converter]
 
     def __build_xlnet_model_stages(self) -> List:

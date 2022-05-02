@@ -116,6 +116,6 @@ class SentimentIdentification:
         df = self.__reorganise_df(df, w)
 
         self.logger.info("Adding scores to dataframe.")
-        
+
         return self.__add_scores(df, scores) \
             .repartition(self.partitions)

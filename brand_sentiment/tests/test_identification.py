@@ -4,6 +4,7 @@ from pyspark.sql import SparkSession, DataFrame
 
 from .. import BrandIdentification
 
+
 class TestBrandIdentification(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
@@ -14,7 +15,7 @@ class TestBrandIdentification(unittest.TestCase):
             .getOrCreate()
 
         self.resources = "./brand_sentiment/tests/resources"
-    
+
         self.model_name = "xlnet_base"
         self.partitions = 32
 
@@ -45,7 +46,7 @@ class TestBrandIdentification(unittest.TestCase):
         e = str(a.exception)
         expected_message = "Model must be either 'xlnet_base'" \
                            " or 'ner_conll_bert_base_cased'."
-        
+
         self.assertEqual(e, expected_message)
 
     def test_valid_partition_size(self):

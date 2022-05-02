@@ -4,6 +4,7 @@ from pyspark.sql import SparkSession
 
 from .. import BrandIdentification, SentimentIdentification
 
+
 class TestSentimentIdentification(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
@@ -48,7 +49,7 @@ class TestSentimentIdentification(unittest.TestCase):
         with self.assertRaises(TypeError) as a:
             self.sent.model_name = {"hello": "world!"}
 
-        e = str(a.exception)        
+        e = str(a.exception)
         self.assertEqual(e, "Model name is not a string.")
 
     def test_valid_partition_size(self):
@@ -75,7 +76,7 @@ class TestSentimentIdentification(unittest.TestCase):
 
         self.assertEqual(brand_df.count(), sentiment_df.count())
         self.assertSetEqual(set(sentiment_df.columns), self.sentiment_columns)
-        
+
 
 if __name__ == "__main__":
     unittest.main()

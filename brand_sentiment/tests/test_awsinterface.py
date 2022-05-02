@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from .. import AWSInterface
 
+
 class TestAWSInterface(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
@@ -32,29 +33,29 @@ class TestAWSInterface(unittest.TestCase):
                                 self.extraction_date)
 
         return super().setUp()
-    
+
     def test_valid_extraction_bucket(self):
         valid_bucket = "extracted-news-articles"
         self.aws.extraction_bucket = valid_bucket
-        
+
         self.assertEqual(self.aws.extraction_bucket, valid_bucket)
 
     def test_invalid_extraction_bucket(self):
         with self.assertRaises(TypeError) as a:
             self.aws.extraction_bucket = 123
-        
+
         self.assertEqual(str(a.exception), "Bucket name is not a string.")
 
     def test_valid_sentiment_bucket(self):
         valid_bucket = "processed-news-articles"
         self.aws.sentiment_bucket = valid_bucket
-        
+
         self.assertEqual(self.aws.sentiment_bucket, valid_bucket)
 
     def test_invalid_sentiment_bucket(self):
         with self.assertRaises(TypeError) as a:
             self.aws.sentiment_bucket = list()
-        
+
         self.assertEqual(str(a.exception), "Bucket name is not a string.")
 
     def test_valid_partition_size(self):
@@ -85,15 +86,15 @@ class TestAWSInterface(unittest.TestCase):
     def test_invalid_extraction_date_bad_type(self):
         with self.assertRaises(TypeError) as a:
             self.aws.extraction_date = {"hello": "word!"}
-        
+
         e = str(a.exception)
-        
+
         self.assertEqual(e, "Extraction date is not a string or datetime.")
 
     def test_invalid_extraction_date_malformed_string(self):
         with self.assertRaises(ValueError) as a:
             self.aws.extraction_date = "2021-123-01"
-        
+
         e = str(a.exception)
 
         self.assertEqual(e, "Extraction date isn't ISO format.")
@@ -101,9 +102,9 @@ class TestAWSInterface(unittest.TestCase):
     def test_invalid_extraction_date_bad_day(self):
         with self.assertRaises(ValueError) as a:
             self.aws.extraction_date = datetime.now() + timedelta(days=1)
-        
+
         e = str(a.exception)
-        
+
         self.assertEqual(e, "Extraction date is in the future.")
 
     def test_extraction_bucket_partition_url(self):

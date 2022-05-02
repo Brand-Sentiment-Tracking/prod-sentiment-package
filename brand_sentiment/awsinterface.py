@@ -97,7 +97,7 @@ class AWSInterface:
     def language(self, lang: str):
         if type(lang) != str:
             raise TypeError("Lanaguage is not a string.")
-        
+
         self.__language = lang
 
     @property
