@@ -15,10 +15,13 @@ class TestSentimentIdentification(unittest.TestCase):
 
         self.resources = "./brand_sentiment/tests/resources"
 
-        self.model_name = "classifierdl_bertwiki_finance_sentiment_pipeline"
+        self.brand_model_name = "xlnet_base"
+        self.sent_model_name = "classifierdl_bertwiki_finance" \
+                               "_sentiment_pipeline"
+
         self.partitions = 32
 
-        self.brand = BrandIdentification(self.spark, self.model_name,
+        self.brand = BrandIdentification(self.spark, self.brand_model_name,
                                          self.partitions)
 
         self.sentiment_columns = set(["text", "source_domain", "language",
@@ -29,7 +32,7 @@ class TestSentimentIdentification(unittest.TestCase):
         super().__init__(*args, **kwargs)
 
     def setUp(self):
-        self.sent = SentimentIdentification(self.spark, self.model_name,
+        self.sent = SentimentIdentification(self.spark, self.sent_model_name,
                                             self.partitions)
         return super().setUp()
 

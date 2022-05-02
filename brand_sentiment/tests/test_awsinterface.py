@@ -76,11 +76,11 @@ class TestAWSInterface(unittest.TestCase):
 
     def test_valid_extraction_date_string(self):
         self.aws.extraction_date = "2021-12-01"
-        self.assertEqual(self.aws.extraction_date, datetime(2021, 12, 1))
+        self.assertEqual(self.aws.extraction_date, "2021-12-01")
 
     def test_valid_extraction_date_datetime(self):
         self.aws.extraction_date = datetime(2021, 12, 1)
-        self.assertEqual(self.aws.extraction_date, datetime(2021, 12, 1))
+        self.assertEqual(self.aws.extraction_date, "2021-12-01")
 
     def test_invalid_extraction_date_bad_type(self):
         with self.assertRaises(TypeError) as a:
@@ -113,7 +113,7 @@ class TestAWSInterface(unittest.TestCase):
 
         expected_url = "s3a://the-extraction-bucket/" \
                        "date_crawled=2021-12-01/" \
-                       "language=xyz"
+                       "language=xyz/"
 
         self.assertEqual(self.aws.extraction_url, expected_url)
 
