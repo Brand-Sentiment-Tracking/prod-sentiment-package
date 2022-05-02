@@ -2,9 +2,12 @@ import logging
 
 from typing import List
 
-from pyspark.sql import SparkSession, DataFrame, functions as F
-from pyspark.sql.window import Window, WindowSpec
+from pyspark.sql import SparkSession, DataFrame, Row
 from pyspark.sql.types import StringType, ArrayType
+from pyspark.sql import functions as F
+
+from pyspark.sql.window import Window, WindowSpec
+
 from sparknlp.pretrained import PretrainedPipeline
 
 
@@ -131,10 +134,10 @@ class SentimentIdentification:
 
     @staticmethod
     @F.udf(returnType=ArrayType(ArrayType(StringType())))
-    def __append_sentiment(entities, sentiment) -> List[List[str]]:
+    def __append_sentiment(entities: List[Row], sent: str) -> List[List[str]]:
         """User defined function to add sentiment to each NER result."""
         for entity in entities:
-            entity.append(sentiment)
+            entity.append(sent)
 
         return entities
 
