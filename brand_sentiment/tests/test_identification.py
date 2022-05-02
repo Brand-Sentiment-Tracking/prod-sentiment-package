@@ -24,19 +24,44 @@ class TestBrandIdentification(unittest.TestCase):
         return super().setUp()
 
     def test_valid_model_name(self):
-        pass
+        model = "ner_conll_bert_base_cased"
+        self.brand.model_name = model
+        self.assertEqual(self.brand.model_name, model)
+
+        model = "xlnet_base"
+        self.brand.model_name = model
+        self.assertEqual(self.brand.model_name, model)
 
     def test_invalid_model_name(self):
-        pass
+        with self.assertRaises(ValueError) as a:
+            self.brand.model_name = "not-a-valid-model"
+
+        e = str(a.exception)
+        expected_message = "Model must be either 'xlnet_base'" \
+                           " or 'ner_conll_bert_base_cased'."
+        
+        self.assertEqual(e, expected_message)
 
     def test_unknown_model_name(self):
         pass
 
     def test_valid_partition_size(self):
-        pass
+        self.brand.partitions = 50
+        self.assertEqual(self.brand.partitions, 50)
 
     def test_invalid_partition_size(self):
-        pass
+        with self.assertRaises(ValueError) as a1:
+            self.brand.partitions = "Not too many records pls"
+
+        with self.assertRaises(ValueError) as a2:
+            self.brand.partitions = -1
+
+        e1 = str(a1.exception)
+        e2 = str(a2.exception)
+
+        self.assertEqual(e1, "Partitions is not an integer.")
+        self.assertEqual(e2, "Partitions is not greater than 0.")
+
 
     def test_build_xlnet_pipeline(self):
         pass

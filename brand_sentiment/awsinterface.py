@@ -39,7 +39,7 @@ class AWSInterface:
     @extraction_bucket.setter
     def extraction_bucket(self, name: str):
         if type(name) != str:
-            raise ValueError("Bucket name is not a string.")
+            raise TypeError("Bucket name is not a string.")
 
         self.__extraction_bucket = name
 
@@ -50,7 +50,7 @@ class AWSInterface:
     @sentiment_bucket.setter
     def sentiment_bucket(self, name: str):
         if type(name) != str:
-            raise ValueError("Bucket name is not a string.")
+            raise TypeError("Bucket name is not a string.")
 
         self.__sentiment_bucket = name
 
@@ -61,7 +61,7 @@ class AWSInterface:
     @partitions.setter
     def partitions(self, n: int):
         if type(n) != int:
-            raise ValueError("Partitions is not an integer")
+            raise TypeError("Partitions is not an integer.")
         elif n <= 0:
             raise ValueError("Partitions is not greater than 0.")
 
@@ -82,7 +82,7 @@ class AWSInterface:
                 setter_error = ValueError("Extraction date isn't ISO format.")
                 raise setter_error from parse_error
         else:
-            raise ValueError("Extraction date is not a string or datetime.")
+            raise TypeError("Extraction date is not a string or datetime.")
 
         if parsed_date > datetime.now():
             raise ValueError("Extraction date is in the future.")
@@ -96,7 +96,7 @@ class AWSInterface:
     @language.setter
     def language(self, lang: str):
         if type(lang) != str:
-            raise ValueError("Lanaguage is not a string.")
+            raise TypeError("Lanaguage is not a string.")
         
         self.__language = lang
 

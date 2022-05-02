@@ -12,6 +12,7 @@ from pyspark.sql import functions as F
 from sparknlp.base import DocumentAssembler
 from sparknlp.annotator import XlnetForTokenClassification, \
     Tokenizer, BertEmbeddings, NerDLModel, NerConverter
+from transformers import PreTrainedModel
 
 
 class BrandIdentification:
@@ -30,7 +31,9 @@ class BrandIdentification:
         self.model_name = model_name
         self.partitions = partitions
 
-        self.__build_pipeline()
+    @property
+    def model(self) -> PreTrainedModel:
+        return self.__model
 
     @property
     def pipeline(self) -> Pipeline:
@@ -47,6 +50,7 @@ class BrandIdentification:
                              "'ner_conll_bert_base_cased'.")
 
         self.__model_name = name
+        self.__build_pipeline()
 
     @property
     def partitions(self) -> int:
@@ -122,7 +126,11 @@ class BrandIdentification:
         stages.extend(self.__build_converter_stages())
 
         # An empty df with column name "text"
+        empty_df = self.spark.createDataFrame([['']], ["text"])
+
         self.__pipeline = Pipeline(stages=stages)
+        self.__model = self.pipeline.fit(empty_df)
+
         self.logger.info("NER Pipeline built successfully.")
 
     @staticmethod
@@ -135,7 +143,7 @@ class BrandIdentification:
 
         self.logger.info("Running NER model.")
 
-        brand_df = self.pipeline.fit(df).transform(df) \
+        brand_df = self.model.transform(df) \
             .withColumn("entities", self.__extract_brands('ner_chunk')) \
             .select(*self.NER_FIELDS)
 
