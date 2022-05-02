@@ -81,10 +81,10 @@ class AWSInterface:
     def partitions(self) -> int:
         """`int`: The number of partitions to store a dataframe in during
         analysis.
-            
+
         The best value is dependent on how the spark session has been created
         and the hardware of your machine. By default, this is 32. Setting
-        this value to less than 1 will throw a ValueError. 
+        this value to less than 1 will throw a ValueError.
         """
         return self.__partitions
 
@@ -100,7 +100,7 @@ class AWSInterface:
     @property
     def extraction_date(self) -> str:
         """`str`: The date to pull articles from for analysis.
-        
+
         The setter will automatically try to convert a string or datetime
         object to YYYY-MM-DD format. If the date is in the future, a
         ValueError will be raised.
@@ -129,7 +129,7 @@ class AWSInterface:
     def language(self) -> str:
         """`str`: The short-code of the language to pull articles from for
         analysis.
-        
+
         Note:
             Languages other than english are not currently supported.
         """
@@ -156,7 +156,7 @@ class AWSInterface:
 
     def __preprocess_dataframe(self, df: DataFrame) -> DataFrame:
         """Edit the article dataframe in preparation for sentiment analysis.
-        
+
         This includes:
             - Filling in all null publish dates with the date crawled.
             - Adding the language column back into the dataframe.
@@ -165,7 +165,7 @@ class AWSInterface:
 
         Args:
             df (DataFrame): The spark df to preprocess.
-        
+
         Returns:
             DataFrame: The processed dataframe ready for sentiment analysis.
         """

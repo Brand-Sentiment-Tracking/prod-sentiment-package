@@ -55,7 +55,7 @@ class BrandIdentification:
     @property
     def model_name(self) -> str:
         """`str`: The name of the pretrained model to build.
-        
+
         Once this has been set, the pipeline and model will be built.
         """
         return self.__model_name
@@ -73,10 +73,10 @@ class BrandIdentification:
     def partitions(self) -> int:
         """`int`: The number of partitions to store a dataframe in during
         analysis.
-            
+
         The best value is dependent on how the spark session has been created
         and the hardware of your machine. By default, this is 32. Setting
-        this value to less than 1 will throw a ValueError. 
+        this value to less than 1 will throw a ValueError.
         """
         return self.__partitions
 
